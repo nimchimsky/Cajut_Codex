@@ -10,20 +10,26 @@ on:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Download test document
-        shell: bash
+      - name: Check out collector
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Install collector dependencies
+        run: python -m pip install --quiet requests beautifulsoup4 lxml
+      - name: Download official corpus
         run: |
-          set -euo pipefail
-          mkdir -p bundle
-          curl -L --fail --retry 3 --retry-delay 2 \
-            -o bundle/T08_MAN.GRAL.008.pdf \
-            'https://interior.gencat.cat/web/.content/home/030_arees_dactuacio/bombers/acces_al_cos_de_bombers/convocatories/convocatories_de_bombers/ACCES-81_26/DOCUMENTACIO-ESTUDI/Tema-08-MAN.GRAL.008.pdf'
-          printf 'Temporary collection test for the Bombers 81/26 study bundle.\n' > bundle/README.txt
-      - name: Upload bundle
+          set +e
+          python scripts/collect_bombers.py
+          code=$?
+          echo "collector_exit_code=$code" >> "$GITHUB_ENV"
+          exit 0
+      - name: Upload collected corpus
         uses: actions/upload-artifact@v4
         with:
-          name: bombers-81-26-test
+          name: bombers-81-26-official-corpus
           path: bundle
           if-no-files-found: error
           compression-level: 6
+          retention-days: 7
