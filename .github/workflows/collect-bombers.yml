@@ -1,4 +1,4 @@
-name: Collect Bombers supplemental documents
+name: Collect Bombers final fixes
 
 on:
   pull_request:
@@ -8,21 +8,24 @@ on:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
-      - name: Check out collector
-        uses: actions/checkout@v4
-        with:
-          ref: main
-      - name: Install collector dependencies
-        run: python -m pip install --quiet requests beautifulsoup4 lxml
-      - name: Download supplemental corpus
-        run: python scripts/collect_bombers_supplement.py
-      - name: Upload collected corpus
+      - name: Download final missing documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p fixes/normativa fixes/manuals
+          curl -L --fail --retry 4 -o fixes/normativa/Llei_13-2008_presidencia_Generalitat_i_Govern_consolidada.pdf 'https://www.boe.es/buscar/pdf/2008/BOE-A-2008-19526-consolidado.pdf'
+          curl -L --fail --retry 4 -o fixes/normativa/Reglament_UE_2016-425_EPI.pdf 'https://www.boe.es/doue/2016/081/L00051-00098.pdf'
+          curl -L --fail --retry 4 -o fixes/manuals/2025_Maniobres_basiques_eines_incendis_vegetacio.pdf 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/2914/Maniobres%20b%C3%A0siques%20eines%20manuals.pdf?isAllowed=y&sequence=1'
+          curl -L --fail --retry 4 -o fixes/manuals/2025_Installacions_suport_comandament.pdf 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/2942/Instal%C2%B7lacions%20de%20suport%20al%20comandament_Manual_2025.pdf?isAllowed=y&sequence=1'
+          curl -L --fail --retry 4 -o fixes/manuals/2025_Pla_accio_intervencio_PAI.pdf 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/2944/Pla%20d%27accio%20en%20la%20intervencio_Manual_2025.pdf?isAllowed=y&sequence=1'
+          sha256sum fixes/normativa/* fixes/manuals/* > fixes/SHA256SUMS.txt
+      - name: Upload final fixes
         uses: actions/upload-artifact@v4
         with:
-          name: bombers-81-26-supplement
-          path: supplement
+          name: bombers-81-26-final-fixes
+          path: fixes
           if-no-files-found: error
           compression-level: 6
           retention-days: 7
