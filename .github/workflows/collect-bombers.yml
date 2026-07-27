@@ -1,9 +1,7 @@
-name: Collect Bombers study documents
+name: Collect Bombers supplemental documents
 
 on:
   pull_request:
-    branches: [ main ]
-  pull_request_target:
     branches: [ main ]
   workflow_dispatch:
 
@@ -18,18 +16,13 @@ jobs:
           ref: main
       - name: Install collector dependencies
         run: python -m pip install --quiet requests beautifulsoup4 lxml
-      - name: Download official corpus
-        run: |
-          set +e
-          python scripts/collect_bombers.py
-          code=$?
-          echo "collector_exit_code=$code" >> "$GITHUB_ENV"
-          exit 0
+      - name: Download supplemental corpus
+        run: python scripts/collect_bombers_supplement.py
       - name: Upload collected corpus
         uses: actions/upload-artifact@v4
         with:
-          name: bombers-81-26-official-corpus
-          path: bundle
+          name: bombers-81-26-supplement
+          path: supplement
           if-no-files-found: error
           compression-level: 6
           retention-days: 7
