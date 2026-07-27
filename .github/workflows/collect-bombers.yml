@@ -1,0 +1,27 @@
+name: Collect Bombers study documents
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download test document
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bundle
+          curl -L --fail --retry 3 --retry-delay 2 \
+            -o bundle/T08_MAN.GRAL.008.pdf \
+            'https://interior.gencat.cat/web/.content/home/030_arees_dactuacio/bombers/acces_al_cos_de_bombers/convocatories/convocatories_de_bombers/ACCES-81_26/DOCUMENTACIO-ESTUDI/Tema-08-MAN.GRAL.008.pdf'
+          printf 'Temporary collection test for the Bombers 81/26 study bundle.\n' > bundle/README.txt
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: bombers-81-26-test
+          path: bundle
+          if-no-files-found: error
+          compression-level: 6
