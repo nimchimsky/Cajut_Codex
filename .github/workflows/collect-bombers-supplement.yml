@@ -1,0 +1,29 @@
+name: Collect Bombers supplemental documents
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/collect-bombers-supplement.yml'
+      - 'scripts/collect_bombers_supplement.py'
+  workflow_dispatch:
+
+jobs:
+  collect-supplement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out collector
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: python -m pip install --quiet requests beautifulsoup4 lxml
+      - name: Download supplemental corpus
+        run: python scripts/collect_bombers_supplement.py
+      - name: Upload supplemental corpus
+        uses: actions/upload-artifact@v4
+        with:
+          name: bombers-81-26-supplement
+          path: supplement
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 7
