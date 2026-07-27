@@ -1,4 +1,4 @@
-name: Collect Bombers final fixes
+name: Collect Bombers T7 regulations
 
 on:
   pull_request:
@@ -10,22 +10,39 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Download final missing documents
+      - name: Download T7 official regulations
         shell: bash
         run: |
-          set -euo pipefail
-          mkdir -p fixes/normativa fixes/manuals
-          curl -L --fail --retry 4 -o fixes/normativa/Llei_13-2008_presidencia_Generalitat_i_Govern_consolidada.pdf 'https://www.boe.es/buscar/pdf/2008/BOE-A-2008-19526-consolidado.pdf'
-          curl -L --fail --retry 4 -o fixes/normativa/Reglament_UE_2016-425_EPI.pdf 'https://www.boe.es/doue/2016/081/L00051-00098.pdf'
-          curl -L --fail --retry 4 -o fixes/manuals/2025_Maniobres_basiques_eines_incendis_vegetacio.pdf 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/2914/Maniobres%20b%C3%A0siques%20eines%20manuals.pdf?isAllowed=y&sequence=1'
-          curl -L --fail --retry 4 -o fixes/manuals/2025_Installacions_suport_comandament.pdf 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/2942/Instal%C2%B7lacions%20de%20suport%20al%20comandament_Manual_2025.pdf?isAllowed=y&sequence=1'
-          curl -L --fail --retry 4 -o fixes/manuals/2025_Pla_accio_intervencio_PAI.pdf 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/2944/Pla%20d%27accio%20en%20la%20intervencio_Manual_2025.pdf?isAllowed=y&sequence=1'
-          sha256sum fixes/normativa/* fixes/manuals/* > fixes/SHA256SUMS.txt
-      - name: Upload final fixes
+          set -u
+          mkdir -p t7
+          : > t7/DOWNLOAD_REPORT.txt
+          fetch() {
+            local url="$1" out="$2"
+            if curl -L --fail --retry 4 --retry-all-errors --connect-timeout 20 --max-time 180 -A 'Mozilla/5.0' -o "t7/$out" "$url"; then
+              if head -c 5 "t7/$out" | grep -q '%PDF-'; then
+                printf 'OK  %s\n' "$out" >> t7/DOWNLOAD_REPORT.txt
+              else
+                printf 'NOT_PDF  %s\n' "$out" >> t7/DOWNLOAD_REPORT.txt
+                rm -f "t7/$out"
+              fi
+            else
+              printf 'FAILED  %s  %s\n' "$out" "$url" >> t7/DOWNLOAD_REPORT.txt
+              rm -f "t7/$out"
+            fi
+          }
+          fetch 'https://portaljuridic.gencat.cat/eli/es-ct/d/2016/07/19/276/dof/cat/pdf' 'Decret_276-2016_funcions_guardia_i_sistema_comandament.pdf'
+          fetch 'https://portaljuridic.gencat.cat/eli/es-ct/d/2023/01/24/12/con/20260206/cat/pdf' 'Decret_12-2023_reestructuracio_versio_consolidada_2026-02-06.pdf'
+          fetch 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/5968/Decret%2041_2024.pdf?isAllowed=y&sequence=1' 'Decret_41-2024_modificacio_Decret_12-2023.pdf'
+          fetch 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/5979/Decret%20239_2025.pdf?isAllowed=y&sequence=1' 'Decret_239-2025_modificacio_Decret_12-2023.pdf'
+          fetch 'https://dsp.interior.gencat.cat/bitstream/handle/20.500.14007/5979/Correcci%C3%B3%20d%27errades%20al%20Decret%20239_2025.pdf?isAllowed=y&sequence=5' 'Correccio_errades_Decret_239-2025.pdf'
+          fetch 'https://governobert.gencat.cat/web/shared/Transparencia/normativa-en-tramit/INT/finalitzats/decrets/decret-16-2026/Publicacio-DOGC-Decret.pdf' 'Decret_16-2026_modificacio_Decret_12-2023.pdf'
+          find t7 -type f -name '*.pdf' -print0 | sort -z | xargs -0 -r sha256sum > t7/SHA256SUMS.txt
+          cat t7/DOWNLOAD_REPORT.txt
+      - name: Upload T7 regulations
         uses: actions/upload-artifact@v4
         with:
-          name: bombers-81-26-final-fixes
-          path: fixes
+          name: bombers-81-26-t7-regulations
+          path: t7
           if-no-files-found: error
           compression-level: 6
           retention-days: 7
